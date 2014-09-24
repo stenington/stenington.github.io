@@ -1,362 +1,419 @@
 <!DOCTYPE html>
-<title>stenington.github.io</title>
-<link href='http://fonts.googleapis.com/css?family=Press+Start+2P' rel='stylesheet' type='text/css'>
-<style>
-  body {
-    background-color: #12124E;
-    font-family: "Press Start 2P", monospace;
-    color: #eee;
-  }
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=520, user-scalable=no">
 
-  .content {
-    margin: auto;
-    position: absolute;
-    top: 0; bottom: 0; left: 0; right: 0;
-    width: 500px;
-    height: 200px;
-    text-align: center;
-  }
-
-  kbd {
-    background-color: #666;
-    border-radius: 2px;
-    padding: 0.3em 0.4em;
-    margin: 0.2em 0.2em;
-    box-shadow: #222 1px 1px 1px;
-  }
-</style>
-
-<div class="content">
-  <canvas id="game">This page needs canvas.</canvas>
-  <p>Use <kbd>◀</kbd> and <kbd>▶</kbd> to play.</p>
-</div>
-
-<script src="node_modules/coquette/coquette-min.js"></script>
-<script>
-
-function Person(game, settings) {
-  this.c = game.c;
-  for (var i in settings) {
-    this[i] = settings[i];
-  }
-
-  this.action = 'waiting';
-  this.life = 100;
-  this.points = 0;
-  this.totalElapsed = 0;
-
-  this.decay = function() {
-    this.life = Math.max(this.life - this.rates.decay, 0);
-    if (this.life === 0) this.dead = true;
-  };
-  this.recharge = function() {
-    this.life = Math.min(this.life + this.rates.recharge, 100);
-  };
-
-  this.earn = function() {
-    this.points += 1;
-  }
-
-  this.update = function(elapsed) {
-    if (!this.dead) {
-      // user input
-      if (this.c.inputter.isPressed(this.c.inputter.RIGHT_ARROW)) {
-        this.action = 'programming';
-      }
-      else if (this.c.inputter.isPressed(this.c.inputter.LEFT_ARROW)) {
-        this.action = 'caffeinating';
-      }
-
-      // do whatever
-      this.actionHandlers[this.action].call(this, elapsed);
-
-      // set appearance
-      if (this.center.x >= 400) this.appearance = "programming";
-      else if (this.center.x <= 100) this.appearance = "drinking";
-      else this.appearance = "walking";
-
-      // set animation frame (2-frame only)
-      if (this.totalElapsed > 333) {
-        this.firstFrame = !this.firstFrame;
-        this.totalElapsed = 0;
-      }
-      else this.totalElapsed += elapsed;
-    }
-  };
-
-  this.actionHandlers = {
-    waiting: function(){
-      this.decay();
-    },
-    programming: function(elapsed) {
-      this.decay();
-      if (this.center.x < 400) {
-        this.center.x += this.speed;
-      }
-      else {
-        this.earn(); 
-      }
-    },
-    caffeinating: function(elapsed) {
-      if (this.center.x > 100) {
-        this.decay();
-        this.center.x -= this.speed;
-      }
-      else {
-        this.recharge(); 
-      }
-    }
-  };
-
-  this.draw = function(ctx) {
-
-    // person
-    ctx.fillStyle = this.colors.player;
-    if (this.dead) {
-      ctx.fillRect(
-        this.center.x - this.size.y / 2,
-        (this.center.y + this.size.y / 2) - this.size.x,
-        this.size.y,
-        this.size.x
-      );
-    }
-    else {
-      ctx.fillRect(
-        this.center.x - this.size.x / 2,
-        this.center.y - this.size.y / 2,
-        this.size.x,
-        this.size.y
-      );
-      if (this.appearance === "programming") {
-        // arms
-        ctx.save();
-        ctx.translate(this.center.x + this.size.x / 4, this.center.y - this.size.y / 7);
-        if (this.firstFrame) ctx.rotate(-0.2);
-        ctx.translate(-(this.center.x + this.size.x / 4), -(this.center.y - this.size.y / 7));
-        ctx.fillRect(
-          this.center.x + this.size.x / 4,
-          this.center.y - this.size.y / 7,
-          this.size.y / 2,
-          5
-        );
-        ctx.fillRect(
-          this.center.x + this.size.x / 4 + this.size.y / 2 - 2,
-          this.center.y - this.size.y / 7 + 4,
-          2,
-          4
-        );
-        ctx.restore();
-      }
+  <title>stenington.github.io</title>
+  <link href='http://fonts.googleapis.com/css?family=Press+Start+2P' rel='stylesheet' type='text/css'>
+  <style>
+    body {
+      background-color: #12124E;
+      font-family: "Press Start 2P", monospace;
+      color: #eee;
     }
 
-    // life
-    ctx.fillStyle = this.colors.life;
-    ctx.fillRect (5, 5, this.life, 10);
-    ctx.strokeStyle = "gray";
-    ctx.lineWidth = 1;
-    ctx.strokeRect (5, 5, 100, 10);
-
-    // points
-    ctx.fillStyle = this.colors.score;
-    ctx.font = "18px 'Press Start 2P'";
-    ctx.fillText(this.points, 500 - 5 - ctx.measureText(this.points).width, 25);
-  };
-}
-
-function Thing(game, settings) {
-  this.c = game.c;
-  for (var i in settings) {
-    this[i] = settings[i];
-  }
-}
-
-function Table(game, settings) {
-  this.c = game.c;
-  for (var i in settings) {
-    this[i] = settings[i];
-  }
-
-  this.draw = function(ctx) {
-    ctx.fillStyle = this.color;
-    ctx.fillRect(
-      this.center.x - this.size.x / 2,
-      this.center.y - this.size.y / 2,
-      this.size.x, 
-      8
-    );
-    ctx.fillRect(
-      this.center.x - this.size.x / 2,
-      this.center.y - this.size.y / 2,
-      5,
-      this.size.y
-    );
-    ctx.fillRect(
-      this.center.x + (this.size.x / 2) - 5,
-      this.center.y - this.size.y / 2,
-      5,
-      this.size.y
-    );
-  };
-}
-
-function drawPress(ctx) {
-  // press
-  ctx.fillStyle = this.color;
-  ctx.fillRect(
-    this.center.x - this.size.x / 2,
-    this.center.y - this.size.y / 2,
-    this.size.x,
-    this.size.y
-  );
-  // handle
-  ctx.strokeStyle = this.color;
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.moveTo(this.center.x - this.size.x / 2, this.center.y - (this.size.y / 2) + 6);
-  ctx.lineTo(this.center.x - (this.size.x / 2) - 4, this.center.y - (this.size.y / 2) + 6);
-  ctx.lineTo(this.center.x - (this.size.x / 2) - 4, this.center.y + (this.size.y / 2) - 6);
-  ctx.lineTo(this.center.x - (this.size.x / 2), this.center.y + (this.size.y / 2) - 6);
-  ctx.stroke();
-  // spout
-  ctx.beginPath();
-  ctx.moveTo(this.center.x + this.size.x / 2, this.center.y - this.size.y / 2);
-  ctx.lineTo(this.center.x + (this.size.x / 2) + 3, this.center.y - this.size.y / 2);
-  ctx.lineTo(this.center.x + this.size.x / 2, this.center.y - (this.size.y / 2) + 5);
-  ctx.fill();
-  // plunger
-  var plungerHeight = this.active ? 3 : 15;
-  ctx.beginPath();
-  ctx.moveTo(this.center.x, this.center.y - this.size.y / 2);
-  ctx.lineTo(this.center.x, this.center.y - (this.size.y / 2) - plungerHeight);
-  ctx.lineTo(this.center.x - 2, this.center.y - (this.size.y / 2) - plungerHeight);
-  ctx.lineTo(this.center.x + 2, this.center.y - (this.size.y / 2) - plungerHeight);
-  ctx.stroke();
-}
-
-function drawMug(ctx) {
-  // press
-  ctx.fillStyle = this.colors.mug;
-  ctx.fillRect(
-    this.center.x - this.size.x / 2,
-    this.center.y - this.size.y / 2,
-    this.size.x,
-    this.size.y
-  );
-  if (this.active) {
-    ctx.save();
-    if (this.firstFrame) {
-      ctx.translate(this.center.x, 0);
-      ctx.scale(-1, 1);
-      ctx.translate(-this.center.x, 0);
+    .content {
+      margin: auto;
+      position: absolute;
+      top: 0; bottom: 0; left: 0; right: 0;
+      width: 500px;
+      height: 200px;
+      text-align: center;
     }
-    ctx.strokeStyle = this.colors.steam;
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(this.center.x - this.size.x / 4, this.center.y - (5 * this.size.y / 8));
-    ctx.bezierCurveTo(
-      this.center.x - this.size.x / 2, this.center.y - (6 * this.size.y / 8),
-      this.center.x, this.center.y - (7 * this.size.y / 8),
-      this.center.x - this.size.x / 4, this.center.y - this.size.y
-    );
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(this.center.x + this.size.x / 4, this.center.y - (5 * this.size.y / 8));
-    ctx.bezierCurveTo(
-      this.center.x, this.center.y - (6 * this.size.y / 8),
-      this.center.x + this.size.x / 2, this.center.y - (7 * this.size.y / 8),
-      this.center.x + this.size.x / 4, this.center.y - this.size.y
-    );
-    ctx.stroke();
-    ctx.restore();
-  }
-}
 
-function drawLaptop(ctx) {
-  ctx.strokeStyle = this.color;
-  ctx.lineWidth = 4;
-  ctx.beginPath();
-  ctx.moveTo(this.center.x - this.size.x / 2, this.center.y + (this.size.y / 2));
-  ctx.lineTo(this.center.x + 2 * this.size.x / 5, this.center.y + (this.size.y / 2));
-  ctx.stroke();
-  ctx.lineWidth = 3;
-  ctx.lineTo(this.center.x + this.size.x / 2, this.center.y - this.size.y / 2);
-  ctx.stroke();
-}
-  
-
-function Game() {
-  this.c = new Coquette(this, "game", 500, 150, "midnightblue");
-
-  var player = this.c.entities.create(Person, {
-    colors: {
-      player: "#66CC00",
-      life: "red",
-      score: "#FFE34D"
-    },
-    center: {x: 250, y: 95},
-    size: {x: 20, y: 60},
-    speed: 2,
-    rates: {
-      decay: 0.2,
-      recharge: 3
+    kbd {
+      background-color: #666;
+      border-radius: 2px;
+      padding: 0.3em 0.4em;
+      margin: 0.2em 0.2em;
+      box-shadow: #222 1px 1px 1px;
     }
-  });
 
-  this.c.entities.create(Table, {
-    center: {x: 60, y: 112},
-    size: {x: 40, y: 25},
-    color: "saddlebrown"
-  });
-  this.c.entities.create(Table, {
-    center: {x: 440, y: 112},
-    size: {x: 40, y: 25},
-    color: "saddlebrown"
-  });
-
-  this.c.entities.create(Thing, {
-    center: {x: 55, y: 87},
-    size: {x: 16, y: 26},
-    color: "silver",
-    active: false,
-    draw: drawPress,
-    update: function(elapsed) {
-      if (player.appearance === 'drinking') this.active = true;
-      else this.active = false;
+    .touch {
+      position: absolute;
+      top: 0;
+      bottom: 0;
     }
-  });
 
-  this.c.entities.create(Thing, {
-    center: {x: 73, y: 94},
-    size: {x: 10, y: 12},
-    colors: {
-      mug: "white",
-      steam: "skyblue"
-    },
-    active: false,
-    draw: drawMug,
-    totalElapsed: 0,
-    update: function(elapsed) {
-      if (player.appearance === 'drinking') {
-        this.active = true;
+    .touch.left {
+      left: 0;
+      right: 50%;
+    }
+
+    .touch.right {
+      right: 0;
+      left: 50%;
+    }
+
+    .touchscreen {
+      display: none;
+    }
+    .touchable .keyboard {
+      display: none;
+    }
+    .touchable .touchscreen {
+      display: block;
+    }
+  </style>
+
+  <script>
+    if ('ontouchstart' in window) {
+      window.addEventListener('load', function() {
+        document.body.classList.add('touchable');
+      });
+    }
+  </script>
+</head>
+<body class="wat">
+  <div class="content">
+    <canvas id="game">This page needs canvas.</canvas>
+    <p class="keyboard">Use <kbd>◀</kbd> and <kbd>▶</kbd> to play.</p>
+    <p class="touchscreen">Touch left or right to play.</p>
+  </div>
+  <div class="touch left" data-keycode=37></div>
+  <div class="touch right" data-keycode=39></div>
+
+  <script src="node_modules/coquette/coquette-min.js"></script>
+  <script>
+
+  function Person(game, settings) {
+    this.c = game.c;
+    for (var i in settings) {
+      this[i] = settings[i];
+    }
+
+    this.action = 'waiting';
+    this.life = 100;
+    this.points = 0;
+    this.totalElapsed = 0;
+
+    this.decay = function() {
+      this.life = Math.max(this.life - this.rates.decay, 0);
+      if (this.life === 0) this.dead = true;
+    };
+    this.recharge = function() {
+      this.life = Math.min(this.life + this.rates.recharge, 100);
+    };
+
+    this.earn = function() {
+      this.points += 1;
+    }
+
+    this.update = function(elapsed) {
+      if (!this.dead) {
+        // user input
+        if (this.c.inputter.isPressed(this.c.inputter.RIGHT_ARROW)) {
+          this.action = 'programming';
+        }
+        else if (this.c.inputter.isPressed(this.c.inputter.LEFT_ARROW)) {
+          this.action = 'caffeinating';
+        }
+
+        // do whatever
+        this.actionHandlers[this.action].call(this, elapsed);
+
+        // set appearance
+        if (this.center.x >= 400) this.appearance = "programming";
+        else if (this.center.x <= 100) this.appearance = "drinking";
+        else this.appearance = "walking";
+
+        // set animation frame (2-frame only)
         if (this.totalElapsed > 333) {
           this.firstFrame = !this.firstFrame;
           this.totalElapsed = 0;
         }
         else this.totalElapsed += elapsed;
       }
-      else this.active = false;
+    };
+
+    this.actionHandlers = {
+      waiting: function(){
+        this.decay();
+      },
+      programming: function(elapsed) {
+        this.decay();
+        if (this.center.x < 400) {
+          this.center.x += this.speed;
+        }
+        else {
+          this.earn(); 
+        }
+      },
+      caffeinating: function(elapsed) {
+        if (this.center.x > 100) {
+          this.decay();
+          this.center.x -= this.speed;
+        }
+        else {
+          this.recharge(); 
+        }
+      }
+    };
+
+    this.draw = function(ctx) {
+
+      // person
+      ctx.fillStyle = this.colors.player;
+      if (this.dead) {
+        ctx.fillRect(
+          this.center.x - this.size.y / 2,
+          (this.center.y + this.size.y / 2) - this.size.x,
+          this.size.y,
+          this.size.x
+        );
+      }
+      else {
+        ctx.fillRect(
+          this.center.x - this.size.x / 2,
+          this.center.y - this.size.y / 2,
+          this.size.x,
+          this.size.y
+        );
+        if (this.appearance === "programming") {
+          // arms
+          ctx.save();
+          ctx.translate(this.center.x + this.size.x / 4, this.center.y - this.size.y / 7);
+          if (this.firstFrame) ctx.rotate(-0.2);
+          ctx.translate(-(this.center.x + this.size.x / 4), -(this.center.y - this.size.y / 7));
+          ctx.fillRect(
+            this.center.x + this.size.x / 4,
+            this.center.y - this.size.y / 7,
+            this.size.y / 2,
+            5
+          );
+          ctx.fillRect(
+            this.center.x + this.size.x / 4 + this.size.y / 2 - 2,
+            this.center.y - this.size.y / 7 + 4,
+            2,
+            4
+          );
+          ctx.restore();
+        }
+      }
+
+      // life
+      ctx.fillStyle = this.colors.life;
+      ctx.fillRect (5, 5, this.life, 10);
+      ctx.strokeStyle = "gray";
+      ctx.lineWidth = 1;
+      ctx.strokeRect (5, 5, 100, 10);
+
+      // points
+      ctx.fillStyle = this.colors.score;
+      ctx.font = "18px 'Press Start 2P'";
+      ctx.fillText(this.points, 500 - 5 - ctx.measureText(this.points).width, 25);
+    };
+  }
+
+  function Thing(game, settings) {
+    this.c = game.c;
+    for (var i in settings) {
+      this[i] = settings[i];
     }
-  });
+  }
 
-  this.c.entities.create(Thing, {
-    center: {x: 440, y: 85},
-    size: {x: 30, y: 25},
-    color: "silver",
-    draw: drawLaptop
-  });
-}
+  function Table(game, settings) {
+    this.c = game.c;
+    for (var i in settings) {
+      this[i] = settings[i];
+    }
 
-window.addEventListener('load', function() {
-  new Game();
-});
-</script>
+    this.draw = function(ctx) {
+      ctx.fillStyle = this.color;
+      ctx.fillRect(
+        this.center.x - this.size.x / 2,
+        this.center.y - this.size.y / 2,
+        this.size.x, 
+        8
+      );
+      ctx.fillRect(
+        this.center.x - this.size.x / 2,
+        this.center.y - this.size.y / 2,
+        5,
+        this.size.y
+      );
+      ctx.fillRect(
+        this.center.x + (this.size.x / 2) - 5,
+        this.center.y - this.size.y / 2,
+        5,
+        this.size.y
+      );
+    };
+  }
+
+  function drawPress(ctx) {
+    // press
+    ctx.fillStyle = this.color;
+    ctx.fillRect(
+      this.center.x - this.size.x / 2,
+      this.center.y - this.size.y / 2,
+      this.size.x,
+      this.size.y
+    );
+    // handle
+    ctx.strokeStyle = this.color;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(this.center.x - this.size.x / 2, this.center.y - (this.size.y / 2) + 6);
+    ctx.lineTo(this.center.x - (this.size.x / 2) - 4, this.center.y - (this.size.y / 2) + 6);
+    ctx.lineTo(this.center.x - (this.size.x / 2) - 4, this.center.y + (this.size.y / 2) - 6);
+    ctx.lineTo(this.center.x - (this.size.x / 2), this.center.y + (this.size.y / 2) - 6);
+    ctx.stroke();
+    // spout
+    ctx.beginPath();
+    ctx.moveTo(this.center.x + this.size.x / 2, this.center.y - this.size.y / 2);
+    ctx.lineTo(this.center.x + (this.size.x / 2) + 3, this.center.y - this.size.y / 2);
+    ctx.lineTo(this.center.x + this.size.x / 2, this.center.y - (this.size.y / 2) + 5);
+    ctx.fill();
+    // plunger
+    var plungerHeight = this.active ? 3 : 15;
+    ctx.beginPath();
+    ctx.moveTo(this.center.x, this.center.y - this.size.y / 2);
+    ctx.lineTo(this.center.x, this.center.y - (this.size.y / 2) - plungerHeight);
+    ctx.lineTo(this.center.x - 2, this.center.y - (this.size.y / 2) - plungerHeight);
+    ctx.lineTo(this.center.x + 2, this.center.y - (this.size.y / 2) - plungerHeight);
+    ctx.stroke();
+  }
+
+  function drawMug(ctx) {
+    // press
+    ctx.fillStyle = this.colors.mug;
+    ctx.fillRect(
+      this.center.x - this.size.x / 2,
+      this.center.y - this.size.y / 2,
+      this.size.x,
+      this.size.y
+    );
+    if (this.active) {
+      ctx.save();
+      if (this.firstFrame) {
+        ctx.translate(this.center.x, 0);
+        ctx.scale(-1, 1);
+        ctx.translate(-this.center.x, 0);
+      }
+      ctx.strokeStyle = this.colors.steam;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(this.center.x - this.size.x / 4, this.center.y - (5 * this.size.y / 8));
+      ctx.bezierCurveTo(
+        this.center.x - this.size.x / 2, this.center.y - (6 * this.size.y / 8),
+        this.center.x, this.center.y - (7 * this.size.y / 8),
+        this.center.x - this.size.x / 4, this.center.y - this.size.y
+      );
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(this.center.x + this.size.x / 4, this.center.y - (5 * this.size.y / 8));
+      ctx.bezierCurveTo(
+        this.center.x, this.center.y - (6 * this.size.y / 8),
+        this.center.x + this.size.x / 2, this.center.y - (7 * this.size.y / 8),
+        this.center.x + this.size.x / 4, this.center.y - this.size.y
+      );
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+
+  function drawLaptop(ctx) {
+    ctx.strokeStyle = this.color;
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(this.center.x - this.size.x / 2, this.center.y + (this.size.y / 2));
+    ctx.lineTo(this.center.x + 2 * this.size.x / 5, this.center.y + (this.size.y / 2));
+    ctx.stroke();
+    ctx.lineWidth = 3;
+    ctx.lineTo(this.center.x + this.size.x / 2, this.center.y - this.size.y / 2);
+    ctx.stroke();
+  }
+    
+
+  function Game() {
+    this.c = new Coquette(this, "game", 500, 150, "midnightblue");
+
+    // hack for mobile
+    var _this = this;
+    var touchZones = document.getElementsByClassName('touch');
+    Array.prototype.forEach.call(touchZones, function(zone) {
+      zone.addEventListener('touchstart', function(e) {
+        _this.c.inputter._buttonListener._down(zone.getAttribute('data-keycode'));
+      });
+      zone.addEventListener('touchend', function(e) {
+        _this.c.inputter._buttonListener._up(zone.getAttribute('data-keycode'));
+      });
+    });
+
+    var player = this.c.entities.create(Person, {
+      colors: {
+        player: "#66CC00",
+        life: "red",
+        score: "#FFE34D"
+      },
+      center: {x: 250, y: 95},
+      size: {x: 20, y: 60},
+      speed: 2,
+      rates: {
+        decay: 0.2,
+        recharge: 3
+      }
+    });
+
+    this.c.entities.create(Table, {
+      center: {x: 60, y: 112},
+      size: {x: 40, y: 25},
+      color: "saddlebrown"
+    });
+    this.c.entities.create(Table, {
+      center: {x: 440, y: 112},
+      size: {x: 40, y: 25},
+      color: "saddlebrown"
+    });
+
+    this.c.entities.create(Thing, {
+      center: {x: 55, y: 87},
+      size: {x: 16, y: 26},
+      color: "silver",
+      active: false,
+      draw: drawPress,
+      update: function(elapsed) {
+        if (player.appearance === 'drinking') this.active = true;
+        else this.active = false;
+      }
+    });
+
+    this.c.entities.create(Thing, {
+      center: {x: 73, y: 94},
+      size: {x: 10, y: 12},
+      colors: {
+        mug: "white",
+        steam: "skyblue"
+      },
+      active: false,
+      draw: drawMug,
+      totalElapsed: 0,
+      update: function(elapsed) {
+        if (player.appearance === 'drinking') {
+          this.active = true;
+          if (this.totalElapsed > 333) {
+            this.firstFrame = !this.firstFrame;
+            this.totalElapsed = 0;
+          }
+          else this.totalElapsed += elapsed;
+        }
+        else this.active = false;
+      }
+    });
+
+    this.c.entities.create(Thing, {
+      center: {x: 440, y: 85},
+      size: {x: 30, y: 25},
+      color: "silver",
+      draw: drawLaptop
+    });
+  }
+
+  window.addEventListener('load', function() {
+    new Game();
+  });
+  </script>
+</body>
+</html>
