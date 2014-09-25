@@ -324,6 +324,15 @@
     ctx.lineWidth = 3;
     ctx.lineTo(this.center.x + this.size.x / 2, this.center.y - this.size.y / 2);
     ctx.stroke();
+
+    ctx.strokeStyle = "#4d4d4d";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(this.center.x + 2 * this.size.x / 5 - 1, this.center.y + (this.size.y / 2));
+    ctx.lineTo(this.center.x + 2 * this.size.x / 5 - 3, this.center.y + (this.size.y / 2));
+    ctx.moveTo(this.center.x + 2 * this.size.x / 5 - 4, this.center.y + (this.size.y / 2));
+    ctx.lineTo(this.center.x + 2 * this.size.x / 5 - 7, this.center.y + (this.size.y / 2));
+    ctx.stroke();
   }
     
 
@@ -405,7 +414,7 @@
 
     this.c.entities.create(Thing, {
       center: {x: 440, y: 85},
-      size: {x: 30, y: 25},
+      size: {x: 30, y: 26},
       color: "silver",
       draw: drawLaptop
     });
