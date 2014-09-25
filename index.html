@@ -11,6 +11,7 @@
       background-color: #12124E;
       font-family: "Press Start 2P", monospace;
       color: #eee;
+      line-height: 1.6em;
     }
 
     .content {
@@ -46,14 +47,26 @@
       left: 50%;
     }
 
-    .touchscreen {
+    .touchscreen,
+    .touch {
       display: none;
     }
     .touchable .keyboard {
       display: none;
     }
-    .touchable .touchscreen {
+    .touchable .touchscreen,
+    .touchable .touch {
       display: block;
+    }
+
+    .dead {
+      display: none;
+    }
+    .gameover .dead {
+      display: block;
+    }
+    .gameover .alive {
+      display: none;
     }
   </style>
 
@@ -68,8 +81,14 @@
 <body class="wat">
   <div class="content">
     <canvas id="game">This page needs canvas.</canvas>
-    <p class="keyboard">Use <kbd>◀</kbd> and <kbd>▶</kbd> to play.</p>
-    <p class="touchscreen">Touch left or right to play.</p>
+    <div class="keyboard">
+      <p class="alive">Use <kbd>◀</kbd> and <kbd>▶</kbd> to play.</p>
+      <p class="dead">Press <kbd>R</kbd> to restart.</p>
+    </div>
+    <div class="touchscreen">
+      <p class="alive">Touch left or right to play.</p>
+      <p class="dead">Touch anywhere to restart.</p>
+    </div>
   </div>
   <div class="touch left" data-keycode=37></div>
   <div class="touch right" data-keycode=39></div>
@@ -337,91 +356,117 @@
     
 
   function Game() {
-    this.c = new Coquette(this, "game", 500, 150, "midnightblue");
+    this.c = new Coquette(this, "game", 500, 150, "midnightblue", true);
 
     // hack for mobile
     var _this = this;
     var touchZones = document.getElementsByClassName('touch');
     Array.prototype.forEach.call(touchZones, function(zone) {
       zone.addEventListener('touchstart', function(e) {
-        _this.c.inputter._buttonListener._down(zone.getAttribute('data-keycode'));
+        if (!_this.player.dead)
+          _this.c.inputter._buttonListener._down(zone.getAttribute('data-keycode'));
+        else
+          _this.c.inputter._buttonListener._down(_this.c.inputter.R);
       });
       zone.addEventListener('touchend', function(e) {
-        _this.c.inputter._buttonListener._up(zone.getAttribute('data-keycode'));
+        if (!_this.player.dead)
+          _this.c.inputter._buttonListener._up(zone.getAttribute('data-keycode'));
+        else
+          _this.c.inputter._buttonListener._up(_this.c.inputter.R);
       });
     });
 
-    var player = this.c.entities.create(Person, {
-      colors: {
-        player: "#66CC00",
-        life: "red",
-        score: "#FFE34D"
-      },
-      center: {x: 250, y: 95},
-      size: {x: 20, y: 60},
-      speed: 2,
-      rates: {
-        decay: 0.2,
-        recharge: 3
-      }
-    });
+    this.restart = function(){
+      this.c.entities.all().forEach(function(entity){
+        this.c.entities.destroy(entity);
+      }.bind(this));
 
-    this.c.entities.create(Table, {
-      center: {x: 60, y: 112},
-      size: {x: 40, y: 25},
-      color: "saddlebrown"
-    });
-    this.c.entities.create(Table, {
-      center: {x: 440, y: 112},
-      size: {x: 40, y: 25},
-      color: "saddlebrown"
-    });
+      this.gameover = false;
+      document.body.classList.remove('gameover');
 
-    this.c.entities.create(Thing, {
-      center: {x: 55, y: 87},
-      size: {x: 16, y: 26},
-      color: "silver",
-      active: false,
-      draw: drawPress,
-      update: function(elapsed) {
-        if (player.appearance === 'drinking') this.active = true;
-        else this.active = false;
-      }
-    });
-
-    this.c.entities.create(Thing, {
-      center: {x: 73, y: 94},
-      size: {x: 10, y: 12},
-      colors: {
-        mug: "white",
-        steam: "skyblue"
-      },
-      active: false,
-      draw: drawMug,
-      totalElapsed: 0,
-      update: function(elapsed) {
-        if (player.appearance === 'drinking') {
-          this.active = true;
-          if (this.totalElapsed > 333) {
-            this.firstFrame = !this.firstFrame;
-            this.totalElapsed = 0;
-          }
-          else this.totalElapsed += elapsed;
+      var player = this.player = this.c.entities.create(Person, {
+        colors: {
+          player: "#66CC00",
+          life: "red",
+          score: "#FFE34D"
+        },
+        center: {x: 250, y: 95},
+        size: {x: 20, y: 60},
+        speed: 2,
+        rates: {
+          decay: 0.2,
+          recharge: 3
         }
-        else this.active = false;
-      }
-    });
+      });
 
-    this.c.entities.create(Thing, {
-      center: {x: 440, y: 85},
-      size: {x: 30, y: 26},
-      color: "silver",
-      draw: drawLaptop
-    });
-  }
+      this.c.entities.create(Table, {
+        center: {x: 60, y: 112},
+        size: {x: 40, y: 25},
+        color: "saddlebrown"
+      });
+      this.c.entities.create(Table, {
+        center: {x: 440, y: 112},
+        size: {x: 40, y: 25},
+        color: "saddlebrown"
+      });
+
+      this.c.entities.create(Thing, {
+        center: {x: 55, y: 87},
+        size: {x: 16, y: 26},
+        color: "silver",
+        active: false,
+        draw: drawPress,
+        update: function(elapsed) {
+          if (player.appearance === 'drinking') this.active = true;
+          else this.active = false;
+        }
+      });
+
+      this.c.entities.create(Thing, {
+        center: {x: 73, y: 94},
+        size: {x: 10, y: 12},
+        colors: {
+          mug: "white",
+          steam: "skyblue"
+        },
+        active: false,
+        draw: drawMug,
+        totalElapsed: 0,
+        update: function(elapsed) {
+          if (player.appearance === 'drinking') {
+            this.active = true;
+            if (this.totalElapsed > 333) {
+              this.firstFrame = !this.firstFrame;
+              this.totalElapsed = 0;
+            }
+            else this.totalElapsed += elapsed;
+          }
+          else this.active = false;
+        }
+      });
+
+      this.c.entities.create(Thing, {
+        center: {x: 440, y: 85},
+        size: {x: 30, y: 26},
+        color: "silver",
+        draw: drawLaptop
+      });
+
+      this.update = function(elapsed){
+        if (player.dead && !this.gameover) {
+          document.body.classList.add('gameover');
+          this.gameover = true;      
+        }
+        if (this.gameover && this.c.inputter.isPressed(this.c.inputter.R)) {
+          this.restart();
+        }
+      };
+    }
+  };
 
   window.addEventListener('load', function() {
-    new Game();
+    var g = new Game();
+    g.restart();
   });
   </script>
 </body>
