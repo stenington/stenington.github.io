@@ -89,6 +89,9 @@
       <p class="alive">Touch left or right to play.</p>
       <p class="dead">Touch anywhere to restart.</p>
     </div>
+    <div class="highscore">
+      <p>High score: <span id="highscore">0</span></p>
+    </div>
   </div>
   <div class="touch left" data-keycode=37></div>
   <div class="touch right" data-keycode=39></div>
@@ -456,6 +459,11 @@
         if (player.dead && !this.gameover) {
           document.body.classList.add('gameover');
           this.gameover = true;      
+
+          var highscoreEl = document.querySelector("#highscore");
+          if (this.player.points > highscoreEl.textContent)
+            highscoreEl.textContent = this.player.points;
+            if (localStorage) localStorage.setItem('highscore', this.player.points);
         }
         if (this.gameover && this.c.inputter.isPressed(this.c.inputter.R)) {
           this.restart();
@@ -468,6 +476,12 @@
     var g = new Game();
     g.restart();
   });
+
+  if (localStorage) {
+    var highscoreEl = document.querySelector("#highscore");
+    var highscore = localStorage.getItem('highscore');
+    if (highscore) highscoreEl.textContent = highscore;
+  }
   </script>
 </body>
 </html>
