@@ -1,4 +1,4 @@
-# stenington.github.com
+# stenington.github.io
 Not a blog
 
 * GitHub: https://github.com/stenington 
